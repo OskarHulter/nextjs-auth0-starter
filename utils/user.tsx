@@ -1,60 +1,78 @@
-import React from 'react';
-import fetch from 'isomorphic-unfetch';
+import { createContext, useEffect, useContext, FC } from 'react'
+import { User } from 'auth0'
+import { useImmer } from 'use-immer'
+import fetch from 'isomorphic-unfetch'
+import { UserState } from '../types'
 
-// Use a global to save the user, so we don't have to fetch it again after page navigations
-let userState;
+const defaultState: UserState = {
+  user: null,
+  isLoading: false
+}
 
-const User = React.createContext({ user: null, loading: false });
+const UserContext = createContext<UserState>(defaultState)
 
-export const fetchUser = async () => {
-  if (userState !== undefined) {
-    return userState;
+const UserProvider: FC<{ value: UserState }> = ({ value, children }) => {
+
+  const [userState, setUserState] = useImmer<UserState>({
+    user: value?.user ?? null,
+    isLoading: value?.user === undefined,
+  })
+
+  function setUser(newUser: User): void {
+    setUserState(draft => {
+      draft.user = newUser
+      draft.isLoading = draft.user === undefined
+    })
   }
 
-  const res = await fetch('/api/me');
-  userState = res.ok ? await res.json() : null;
-  return userState;
-};
-
-export const UserProvider = ({ value, children }) => {
-  const { user } = value;
-
-  // If the user was fetched in SSR add it to userState so we don't fetch it again
-  React.useEffect(() => {
-    if (!userState && user) {
-      userState = user;
-    }
-  }, []);
-
-  return <User.Provider value={value}>{children}</User.Provider>;
-};
-
-export const useUser = () => React.useContext(User);
-
-export const useFetchUser = () => {
-  const [data, setUser] = React.useState({
-    user: userState || null,
-    loading: userState === undefined,
-  });
-
-  React.useEffect(() => {
+  async function fetchUser() {
     if (userState !== undefined) {
-      return;
+      return userState
     }
 
-    let isMounted = true;
+    const res = await fetch('/api/getCurrentUser')
+    let data = res.ok ? await res.json() : null
+    return data
+  }
 
-    fetchUser().then(user => {
-      // Only set the user if the component is still mounted
+
+  // sync provider if the user was fetched on server
+  useEffect(() => {
+    if (!userState.user && value.user) {
+      setUser(value.user)
+    }
+  }, [])
+
+  // fetch user if unset, cancels if component is unmounted
+  useEffect(() => {
+    if (userState.user !== undefined) {
+      return
+    }
+
+    let isMounted = true
+
+    fetchUser().then((user: User) => {
       if (isMounted) {
-        setUser({ user, loading: false });
+        setUser(user)
       }
-    });
+    })
 
     return () => {
-      isMounted = false;
-    };
-  }, [userState]);
+      isMounted = false
+    }
+  }, [userState.user])
 
-  return data;
-};
+  return (
+    <UserContext.Provider value={value}>
+      {children}
+    </UserContext.Provider>
+  )
+}
+
+export function useUser(): UserState {
+  const { user, isLoading } = useContext(UserContext)
+
+  return { user, isLoading }
+}
+
+export default UserProvider

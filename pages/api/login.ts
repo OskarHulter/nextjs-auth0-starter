@@ -1,10 +1,25 @@
-import auth0 from '../../utils/auth0';
+import auth0 from '../../utils/auth0'
+import { NextApiRequest, NextApiResponse } from 'next'
+import { LoginOptions } from '@auth0/nextjs-auth0/dist/handlers/login'
+import { handleError } from '../../utils/functions'
 
-export default async function login(req, res) {
+const defaultOptions: LoginOptions = {
+      authParams: {
+        login_hint:'email@example.com',
+        ui_locales: 'no',
+      },
+      redirectTo:'/',
+}
+
+export default async function login(
+  req: NextApiRequest, 
+  res: NextApiResponse,
+  options: LoginOptions = defaultOptions
+  ): Promise<void> {
+
   try {
-    await auth0.handleLogin(req, res, {});
+    await auth0.handleLogin(req, res, options)
   } catch (error) {
-    console.error(error);
-    res.status(error.status || 500).end(error.message);
+    handleError(error, res)
   }
 }

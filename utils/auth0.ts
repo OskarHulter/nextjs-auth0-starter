@@ -1,4 +1,4 @@
-import { initAuth0 } from '@auth0/nextjs-auth0';
+import { initAuth0 } from '@auth0/nextjs-auth0'
 
 export default initAuth0({
   domain: process.env.domain,
@@ -18,4 +18,4 @@ export default initAuth0({
     httpTimeout: 2500,
     clockTolerance: 10000,
   },
-});
+})

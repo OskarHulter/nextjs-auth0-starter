@@ -1,5 +1,5 @@
-import { MainLayout } from '../components/layout/MainLayout';
-import styled from 'styled-components';
+import { MainLayout } from '../components/layout/MainLayout'
+import styled from 'styled-components'
 
 const StyledHome = styled.div`
   padding: 50px 10px;
@@ -7,7 +7,7 @@ const StyledHome = styled.div`
   h1 {
     font-size: 60px;
   }
-`;
+`
 
 export default function Index() {
   return (
@@ -17,5 +17,5 @@ export default function Index() {
         <p>Welcome to the Home Page!</p>
       </StyledHome>
     </MainLayout>
-  );
+  )
 }
